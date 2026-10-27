@@ -1,0 +1,33 @@
+{
+  "blocks": [
+    {
+      "type": "image",
+      "props": {
+        "src": "https://ejemplo.com/banner.jpg",
+        "alt": "Oferta del mes",
+        "link": "https://ejemplo.com/oferta"
+      }
+    },
+    {
+      "type": "text",
+      "props": {
+        "content": "Hola {{Primer nombre}},\ntenemos una oferta para ti."
+      }
+    },
+    {
+      "type": "columns",
+      "props": {
+        "src": "https://ejemplo.com/producto.jpg",
+        "alt": "Producto",
+        "content": "Detalle del producto con este plan."
+      }
+    },
+    {
+      "type": "button",
+      "props": {
+        "label": "Ver oferta",
+        "url": "https://ejemplo.com/oferta?a=1&b=2"
+      }
+    }
+  ]
+}
