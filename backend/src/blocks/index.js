@@ -27,8 +27,29 @@ const url = (u = '') => {
   return toMc(esc(v));
 };
 
-// Imágenes: solo https y, si IMAGE_HOSTS está definido (separado por comas),
-// solo desde esos dominios. Se lee en cada llamada para poder configurarlo por entorno.
+// --- Dominio de imágenes ----------------------------------------------------
+// IMAGE_HOSTS (en .env): dominios separados por comas. Tolera errores comunes:
+// protocolo (https://), rutas, barra final, mayúsculas y comodines (*.dominio.com).
+const normalizeHost = (h) => {
+  let v = h.trim().toLowerCase();
+  if (!v) return '';
+  const wildcard = v.startsWith('*.');
+  if (wildcard) v = v.slice(2);
+  try {
+    v = new URL(v.includes('://') ? v : `https://${v}`).hostname;
+  } catch {
+    /* se deja tal cual */
+  }
+  return wildcard ? `*.${v}` : v;
+};
+
+const allowedHosts = () => (process.env.IMAGE_HOSTS ?? '').split(',').map(normalizeHost).filter(Boolean);
+
+const hostAllowed = (host, list) =>
+  list.some((a) => (a.startsWith('*.') ? host === a.slice(2) || host.endsWith(a.slice(1)) : host === a));
+
+// Imágenes: solo https y, si IMAGE_HOSTS está definido, solo desde esos dominios.
+// Se lee en cada llamada para poder configurarlo por entorno.
 const imgSrc = (u = '') => {
   const v = String(u).trim();
   let parsed = null;
@@ -39,12 +60,14 @@ const imgSrc = (u = '') => {
   }
   if (parsed) {
     if (parsed.protocol !== 'https:') throw new BlockError('Las imágenes deben usar https');
-    const hosts = (process.env.IMAGE_HOSTS ?? '')
-      .split(',')
-      .map((h) => h.trim().toLowerCase())
-      .filter(Boolean);
-    if (hosts.length && !hosts.includes(parsed.hostname.toLowerCase())) {
-      throw new BlockError(`La imagen debe estar alojada en: ${hosts.join(', ')}`);
+    const hosts = allowedHosts();
+    const host = parsed.hostname.toLowerCase();
+    if (hosts.length && !hostAllowed(host, hosts)) {
+      // El detalle de los dominios permitidos solo va a la consola del servidor
+      console.warn(`[imagen rechazada] dominio recibido="${host}" permitidos=${JSON.stringify(hosts)}`);
+      throw new BlockError(
+        `La imagen no está en un dominio permitido (dominio recibido: ${host}). Revisa IMAGE_HOSTS en el .env del servidor.`
+      );
     }
     return url(v);
   }

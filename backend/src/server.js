@@ -32,4 +32,12 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT ?? 3001;
-app.listen(PORT, () => console.log(`API lista en http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`API lista en http://localhost:${PORT}`);
+  const n = (process.env.IMAGE_HOSTS ?? '').split(',').filter((h) => h.trim()).length;
+  console.log(
+    n
+      ? `IMAGE_HOSTS: ${n} dominio(s) configurado(s)`
+      : 'IMAGE_HOSTS vacío: se acepta cualquier dominio https (¿se cargó el .env? debe estar en la carpeta desde donde corres el servidor)'
+  );
+});

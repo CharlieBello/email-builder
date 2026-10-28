@@ -64,10 +64,21 @@ process.env.IMAGE_HOSTS = 'img.ejemplo.com, cdn.ejemplo.com';
 const img = (src) => compile({ blocks: [{ type: 'image', props: { src } }] });
 await img('https://img.ejemplo.com/a.jpg');
 await img('https://CDN.ejemplo.com/a.jpg');
-await assert.rejects(() => img('https://otro.com/a.jpg'), /alojada en/);
-await assert.rejects(() => img('https://img.ejemplo.com.malo.com/a.jpg'), /alojada en/);
+await assert.rejects(() => img('https://otro.com/a.jpg'), /dominio permitido/);
+await assert.rejects(() => img('https://img.ejemplo.com.malo.com/a.jpg'), /dominio permitido/);
 await assert.rejects(() => img('http://img.ejemplo.com/a.jpg'), /https/);
 await assert.rejects(() => img('texto-suelto'), /no válida/);
+// Tolerancia a errores de configuración: protocolo, barra final, mayúsculas, espacios
+process.env.IMAGE_HOSTS = ' HTTPS://Img.Ejemplo.com/lib/ ';
+await img('https://img.ejemplo.com/a.jpg');
+// Comodín
+process.env.IMAGE_HOSTS = '*.ejemplo.com';
+await img('https://img.ejemplo.com/a.jpg');
+await img('https://ejemplo.com/a.jpg');
+await assert.rejects(() => img('https://ejemplo.com.malo.com/a.jpg'), /dominio permitido/);
+// El mensaje al cliente muestra el dominio recibido, no la lista configurada
+process.env.IMAGE_HOSTS = 'privado.interno.com';
+await assert.rejects(() => img('https://otro.com/a.jpg'), (e) => e.message.includes('otro.com') && !e.message.includes('privado'));
 delete process.env.IMAGE_HOSTS;
 await img('https://cualquiera.com/a.jpg'); // sin lista, se acepta cualquier https
 
